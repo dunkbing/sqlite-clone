@@ -39,17 +39,35 @@ void closeInputBuffer(InputBuffer* inputBuffer) {
     free(inputBuffer);
 }
 
+typedef enum {
+    META_COMMAND_SUCCESS,
+    META_COMMAND_UNRECOGNIZED_COMMAND,
+} MetaCommandResult;
+
+typedef enum { PREPARE_SUCCESS, PREPARE_UNRECOGNIZED_STATEMENT } PrepareResult;
+
+MetaCommandResult doMetaCommand(InputBuffer* input_buffer) {
+    if (strcmp(input_buffer->buffer, ".exit") == 0) {
+        exit(EXIT_SUCCESS);
+    } else {
+        return META_COMMAND_UNRECOGNIZED_COMMAND;
+    }
+}
+
 int main() {
-    InputBuffer* input_buffer = newInputBuffer();
+    InputBuffer* inputBuffer = newInputBuffer();
     while (true) {
         printPrompt();
-        readInput(input_buffer);
+        readInput(inputBuffer);
 
-        if (strcmp(input_buffer->buffer, ".exit") == 0) {
-            closeInputBuffer(input_buffer);
-            exit(EXIT_SUCCESS);
-        } else {
-            printf("Unrecognized command '%s'.\n", input_buffer->buffer);
+        if (inputBuffer->buffer[0] == '.') {
+            switch (doMetaCommand(inputBuffer)) {
+                case (META_COMMAND_SUCCESS):
+                    continue;
+                case (META_COMMAND_UNRECOGNIZED_COMMAND):
+                    printf("Unrecognized command '%s'\n", inputBuffer->buffer);
+                continue;
+            }
         }
     }
 }

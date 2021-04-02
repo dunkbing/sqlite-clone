@@ -46,11 +46,41 @@ typedef enum {
 
 typedef enum { PREPARE_SUCCESS, PREPARE_UNRECOGNIZED_STATEMENT } PrepareResult;
 
+typedef enum { STATEMENT_INSERT, STATEMENT_SELECT } StatementType;
+
+typedef struct {
+  StatementType type;
+} Statement;
+
 MetaCommandResult doMetaCommand(InputBuffer* input_buffer) {
     if (strcmp(input_buffer->buffer, ".exit") == 0) {
         exit(EXIT_SUCCESS);
     } else {
         return META_COMMAND_UNRECOGNIZED_COMMAND;
+    }
+}
+
+PrepareResult prepareStatement(InputBuffer* inputBuffer, Statement* statement) {
+    if (strncmp(inputBuffer->buffer, "insert", 6) == 0) {
+        statement->type = STATEMENT_INSERT;
+        return PREPARE_SUCCESS;
+    }
+    if (strcmp(inputBuffer->buffer, "select") == 0) {
+        statement->type = STATEMENT_SELECT;
+        return PREPARE_SUCCESS;
+    }
+
+    return PREPARE_UNRECOGNIZED_STATEMENT;
+}
+
+void execute_statement(Statement* statement) {
+    switch (statement->type) {
+        case (STATEMENT_INSERT):
+            printf("This is where we would do an insert.\n");
+            break;
+        case (STATEMENT_SELECT):
+            printf("This is where we would do a select.\n");
+            break;
     }
 }
 
@@ -69,5 +99,18 @@ int main() {
                 continue;
             }
         }
+
+        Statement statement;
+        switch (prepareStatement(inputBuffer, &statement)) {
+          case (PREPARE_SUCCESS):
+            break;
+          case (PREPARE_UNRECOGNIZED_STATEMENT):
+            printf("Unrecognized keyword at start of '%s'.\n",
+                   inputBuffer->buffer);
+            continue;
+        }
+
+        execute_statement(&statement);
+        printf("Executed.\n");
     }
 }

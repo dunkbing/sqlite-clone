@@ -1,17 +1,20 @@
-#include <iostream>
+#include <cstddef>
+#include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <string>
 
-typedef struct
+struct InputBuffer
 {
-    char* buffer;
-    size_t bufferLength;
-    size_t inputLength;
-} InputBuffer;
+    std::string buffer;
+    size_t bufferLength{};
+    size_t inputLength{};
+};
 
 InputBuffer* newInputBuffer()
 {
-    InputBuffer* inputBuffer = (InputBuffer*)malloc(sizeof(InputBuffer));
-    inputBuffer->buffer = NULL;
+    auto inputBuffer = new InputBuffer;
+    inputBuffer->buffer = "";
     inputBuffer->bufferLength = 0;
     inputBuffer->inputLength = 0;
     return inputBuffer;
@@ -19,24 +22,22 @@ InputBuffer* newInputBuffer()
 
 void printPrompt()
 {
-    printf("db > ");
+    std::cout << "db > ";
 }
 
 void readInput(InputBuffer* inputBuffer)
 {
-    ssize_t bytesRead = getline(&(inputBuffer->buffer), &(inputBuffer->bufferLength), stdin);
-    if (bytesRead <= 0) {
+    std::getline(std::cin, inputBuffer->buffer);
+    if (inputBuffer->buffer.length() <= 0) {
         printf("Error reading input\n");
         exit(EXIT_FAILURE);
     }
     // Ignore trailing newline
-    inputBuffer->inputLength = bytesRead - 1;
-    inputBuffer->buffer[bytesRead - 1] = 0;
+    inputBuffer->inputLength = inputBuffer->buffer.length() - 1;
 }
 
 void closeInputBuffer(InputBuffer* inputBuffer) {
-    free(inputBuffer->buffer);
-    free(inputBuffer);
+    delete inputBuffer;
 }
 
 typedef enum {
@@ -53,19 +54,18 @@ typedef struct {
 } Statement;
 
 MetaCommandResult doMetaCommand(InputBuffer* input_buffer) {
-    if (strcmp(input_buffer->buffer, ".exit") == 0) {
+    if (strcmp(input_buffer->buffer.c_str(), ".exit") == 0) {
         exit(EXIT_SUCCESS);
-    } else {
-        return META_COMMAND_UNRECOGNIZED_COMMAND;
     }
+    return META_COMMAND_UNRECOGNIZED_COMMAND;
 }
 
 PrepareResult prepareStatement(InputBuffer* inputBuffer, Statement* statement) {
-    if (strncmp(inputBuffer->buffer, "insert", 6) == 0) {
+    if (strncmp(inputBuffer->buffer.c_str(), "insert", 6) == 0) {
         statement->type = STATEMENT_INSERT;
         return PREPARE_SUCCESS;
     }
-    if (strcmp(inputBuffer->buffer, "select") == 0) {
+    if (strcmp(inputBuffer->buffer.c_str(), "select") == 0) {
         statement->type = STATEMENT_SELECT;
         return PREPARE_SUCCESS;
     }
@@ -84,7 +84,7 @@ void execute_statement(Statement* statement) {
     }
 }
 
-int main() {
+void main() {
     InputBuffer* inputBuffer = newInputBuffer();
     while (true) {
         printPrompt();
@@ -95,7 +95,7 @@ int main() {
                 case (META_COMMAND_SUCCESS):
                     continue;
                 case (META_COMMAND_UNRECOGNIZED_COMMAND):
-                    printf("Unrecognized command '%s'\n", inputBuffer->buffer);
+                    std::cout << "Unrecognized command '" << inputBuffer->buffer << "'.\n";
                 continue;
             }
         }
@@ -105,8 +105,7 @@ int main() {
           case (PREPARE_SUCCESS):
             break;
           case (PREPARE_UNRECOGNIZED_STATEMENT):
-            printf("Unrecognized keyword at start of '%s'.\n",
-                   inputBuffer->buffer);
+              std::cout << "Unrecognized keyword at start of '" << inputBuffer->buffer << "'.\n";
             continue;
         }
 
